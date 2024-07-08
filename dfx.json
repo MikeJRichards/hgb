@@ -4,6 +4,26 @@
       "main": "src/hgb_backend/main.mo",
       "type": "motoko"
     },
+    "sale": {
+      "main": "src/property_database/main.mo",
+      "type": "motoko"
+    },
+    "exchange": {
+      "main": "src/exchange/main.mo",
+      "type": "motoko"
+    },
+    "property_database": {
+      "main": "src/sale/main.mo",
+      "type": "motoko"
+    },
+    "HGB_token": {
+      "main": "src/HGB_token/main.mo",
+      "type": "motoko"
+    },
+    "LNFT": {
+      "main": "src/LNFT/main.mo",
+      "type": "motoko"
+    },
     "hgb_frontend": {
       "dependencies": [
         "hgb_backend"
