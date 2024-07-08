@@ -1,0 +1,26 @@
+{
+  "canisters": {
+    "hgb_backend": {
+      "main": "src/hgb_backend/main.mo",
+      "type": "motoko"
+    },
+    "hgb_frontend": {
+      "dependencies": [
+        "hgb_backend"
+      ],
+      "source": [
+        "src/hgb_frontend/dist"
+      ],
+      "type": "assets",
+      "workspace": "hgb_frontend"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}
