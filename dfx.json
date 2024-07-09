@@ -13,7 +13,7 @@
       "type": "motoko"
     },
     "property_database": {
-      "main": "src/sale/main.mo",
+      "main": "src/property_database/main.mo",
       "type": "motoko"
     },
     "HGB_token": {
@@ -38,7 +38,7 @@
   "defaults": {
     "build": {
       "args": "",
-      "packtool": ""
+      "packtool": "mops sources"
     }
   },
   "output_env_file": ".env",

@@ -8,25 +8,37 @@ import Option "mo:base/Option";
 import Iter "mo:base/Iter";
 import Float "mo:base/Float";
 import Int "mo:base/Nat";
+import Blob "mo:base/Blob";
+import ICRC2 "mo:icrc2-types";
+import Int32 "mo:base/Int32";
+import Time "mo:base/Time";
 
 actor {
+    public type Subaccount = Blob;
+    public type Account = { owner : Principal; subaccount : ?Subaccount };
+    public type Tokens = Nat;
+    public type Memo = Blob;
     public type Result<A,B> = Result.Result<A,B>;
     public type Property = {
       propertyId: Nat;
       name: Text;
       addressLine1: Text;
       postcode: Text;
-      purchasePrice: Int;
-      currentValue: Int;
-      loanAmount: Int;
+      purchasePrice: Nat;
+      currentValue: Nat;
+      loanAmount: Nat;
       lNftN : Int;
     };
     
-    stable var maxLoanToValue : Float = 0.75;
+    stable var maxLoanToValue : Nat = 75;
     var propertyId : Nat= 0;
     stable var propertyEntries : [Property] = [];
     let properties = HashMap.HashMap<Nat, Property>(0, Nat.equal, Hash.hash); 
     stable var custodians : [Principal] = [];
+
+    let hgb_token : actor {
+		icrc2_transfer_from : shared (caller: Principal, spender_subaccount: ?Blob, from :Account, to: Account, amount: Nat, fee: ?Nat, memo: ?Blob, created_at_time: ?Nat64) -> async (Nat, ICRC2.TransferFromError); 
+	} = actor ("wlksj-syaaa-aaaas-aaa4a-cai"); 
 
     private func _authorised (caller : Principal): ?Text {
         let specificPrincipal = Principal.fromText("2e7fg-mfyxt-iivfx-l7pim-ysvwq-qetwz-h4rhz-t76tr-5zob4-oopr3-hae");
@@ -62,12 +74,12 @@ actor {
         return #ok();
     };
 
-    public shared ({ caller }) func updateLoanToValue (newLoanToValue : Float): async Result<(), Text>{
+    public shared ({ caller }) func updateLoanToValue (newLoanToValue : Nat): async Result<(), Text>{
          let result = _authorised(caller);
         if(Option.isNull(result)){
             return #err("You are not authorised to add custodians");
         };
-        let maxLoan : Float= 0.9;
+        let maxLoan : Nat= 90;
         if(newLoanToValue > maxLoan){
             return #err("You are not allowed to issues loans with a greater loan to value than 90%");
         };
@@ -75,10 +87,10 @@ actor {
         return #ok();
     };
 
-    public shared ({ caller }) func addProperty (name: Text, addressLine1: Text, postcode: Text, purchasePrice: Int): async Result<Property, Text> {
-    if (Array.find<Principal>(custodians, func (x) = x == caller) == null){
-        return #err("You are not authorised to add properties");
-    };
+    public shared ({ caller }) func addProperty (name: Text, addressLine1: Text, postcode: Text, purchasePrice: Nat): async Result<Property, Text> {
+    //if (Array.find<Principal>(custodians, func (x) = x == caller) == null){
+    //    return #err("You are not authorised to add properties");
+    //};
       var newProperty: Property = {
           propertyId;
           name;
@@ -95,7 +107,7 @@ actor {
       return #ok(newProperty);
     };
 
-    public shared ({ caller }) func updateProperty (propertyId: Nat, name: Text, addressLine1: Text, postcode: Text, purchasePrice: Int, currentValue: Int): async Result<Property, Text>{
+    public shared ({ caller }) func updateProperty (propertyId: Nat, name: Text, addressLine1: Text, postcode: Text, purchasePrice: Nat, currentValue: Nat): async Result<Property, Text>{
         if (Array.find<Principal>(custodians, func (x) = x == caller) == null){
         return #err("You are not authorised to update properties");
         };
@@ -146,17 +158,22 @@ actor {
     }
   };
 
-  public shared ({ caller }) func makeMaxLoan (propertyId: Nat): async Result<(), Text>{
-     if (Array.find<Principal>(custodians, func (x) = x == caller) == null){
-        return #err("You are not authorised to add properties");
+    func _calculateMaxLoan (currentValue : Nat): Nat{
+        let loan : Nat = Nat.mul(Nat.div(currentValue, maxLoanToValue),100);
+        return loan; 
     };
+
+  public shared ({ caller }) func makeMaxLoan (propertyId: Nat): async Result<(), Text>{
+    // if (Array.find<Principal>(custodians, func (x) = x == caller) == null){
+    //    return #err("You are not authorised to add properties");
+    //};
     switch(properties.get(propertyId)){
         case(null){
             return #err("This is not a valid property Id")
         };
         case(? property){
-            var newLoan : Int = Float.toInt(Float.floor((Float.fromInt(property.currentValue) * maxLoanToValue)/1000));
-            let additionalLoan = newLoan -  property.loanAmount;
+            var newLoan : Nat = _calculateMaxLoan(property.currentValue);//Float.floor(Float.fromInt((property.currentValue) * maxLoanToValue/1000));
+            let additionalLoan : Nat = newLoan - property.loanAmount;//newLoan -  Int.abs(property.loanAmount);
 
             let updatedProperty : Property = {
                 propertyId;
@@ -169,7 +186,15 @@ actor {
                 lNftN = additionalLoan;
 
             };
-
+            let minter = {
+                owner = Principal.fromText("2e7fg-mfyxt-iivfx-l7pim-ysvwq-qetwz-h4rhz-t76tr-5zob4-oopr3-hae"); 
+                subaccount = null
+            };
+            let saleCanister = {
+                owner = Principal.fromText("wfi7b-jiaaa-aaaas-aaa5a-cai"); 
+                subaccount = null
+            };
+            ignore await hgb_token.icrc2_transfer_from(caller, null, minter, saleCanister, additionalLoan, null, null, null);
             properties.put(propertyId, updatedProperty);
             return #ok();
         }
