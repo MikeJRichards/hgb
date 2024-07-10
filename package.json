@@ -6,6 +6,7 @@
   "name": "hgb",
   "scripts": {
     "build": "npm run build --workspaces --if-present",
+    "local": "./deploy-canisters.sh",
     "prebuild": "npm run prebuild --workspaces --if-present",
     "pretest": "npm run prebuild --workspaces --if-present",
     "start": "npm start --workspaces --if-present",
