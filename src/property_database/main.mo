@@ -40,7 +40,18 @@ actor {
 
     let hgb_token : actor {
 		icrc2_transfer_from : shared (caller: Principal, spender_subaccount: ?Blob, from :Account, to: Account, amount: Nat, fee: ?Nat, memo: ?Blob, created_at_time: ?Nat64) -> async (Nat, ICRC2.TransferFromError); 
-	} = actor ("b77ix-eeaaa-aaaaa-qaada-cai");
+	} = actor ("wlksj-syaaa-aaaas-aaa4a-cai"); 
+//wxoiy-fyaaa-aaaas-aaa6a-cai
+    let icrc7nft : actor {
+		icrcX_mint : shared (tokens: ICRC7.SetNFTRequest) -> async [ICRC7.SetNFTResult]; 
+        assign: shared (token_id: Nat, account : ICRC7.Account) -> async Nat;
+        icrc7_transfer : shared (args : [ICRC7.TransferArg]) -> async [?ICRC7.TransferResult];
+        icrc7_total_supply: shared query ()-> async Nat;
+	} = actor ("wxoiy-fyaaa-aaaas-aaa6a-cai");
+
+    public func lnftTotalSupply (): async Nat {
+       return await icrc7nft.icrc7_total_supply();
+    };
 
     private func _authorised (caller : Principal): ?Text {
         let specificPrincipal = Principal.fromText("2e7fg-mfyxt-iivfx-l7pim-ysvwq-qetwz-h4rhz-t76tr-5zob4-oopr3-hae");
