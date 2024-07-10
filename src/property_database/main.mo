@@ -46,7 +46,7 @@ actor {
     let hgb_token : actor {
         icrc2_transfer_from : shared (caller: Principal, spender_subaccount: ?Blob, from :Account, to: Account, amount: Nat, fee: ?Nat, memo: ?Blob, created_at_time: ?Nat64) -> async (Nat, ICRC2.TransferFromError); 
 	} = actor ("wlksj-syaaa-aaaas-aaa4a-cai"); 
-//wxoiy-fyaaa-aaaas-aaa6a-cai
+
     let icrc7nft : actor {
 		icrcX_mint : shared (tokens: ICRC7.SetNFTRequest) -> async [ICRC7.SetNFTResult]; 
         assign: shared (token_id: Nat, account : ICRC7.Account) -> async Nat;
@@ -106,9 +106,9 @@ actor {
     };
 
     public shared ({ caller }) func addProperty (name: Text, addressLine1: Text, postcode: Text, purchasePrice: Nat): async Result<Property, Text> {
-    //if (Array.find<Principal>(custodians, func (x) = x == caller) == null){
-    //    return #err("You are not authorised to add properties");
-    //};
+    if (Array.find<Principal>(custodians, func (x) = x == caller) == null){
+        return #err("You are not authorised to add properties");
+    };
       var newProperty: Property = {
           propertyId;
           name;
@@ -186,7 +186,7 @@ actor {
                 owner = Principal.fromText("wcjzv-eqaaa-aaaas-aaa5q-cai");
                 subaccount = null
             };
-        //ignore await icrc7nft.assign(2, exchangeCanister);
+
         var token_id = await icrc7nft.icrc7_total_supply();
         token_id += 1;
         let nftRequest : ICRC7.SetNFTItemRequest = {
@@ -199,30 +199,20 @@ actor {
         };
 
         ignore await icrc7nft.icrcX_mint([nftRequest]);
-
-       //let transfer : ICRC7.TransferArg = {
-       //     from_subaccount = null;
-       //     to = exchangeCanister;
-       //     token_id = 1; 
-       //     memo = null;
-       //     created_at_time = ?Nat64.fromIntWrap(Time.now());
-       // };
-//
-       // ignore await icrc7nft.icrc7_transfer([transfer]);
         return ();
     };
 
   public shared ({ caller }) func makeMaxLoan (propertyId: Nat): async Result<(), Text>{
-    // if (Array.find<Principal>(custodians, func (x) = x == caller) == null){
-    //    return #err("You are not authorised to add properties");
-    //};
+     if (Array.find<Principal>(custodians, func (x) = x == caller) == null){
+        return #err("You are not authorised to add properties");
+    };
     switch(properties.get(propertyId)){
         case(null){
             return #err("This is not a valid property Id")
         };
         case(? property){
-            var newLoan : Nat = _calculateMaxLoan(property.currentValue);//Float.floor(Float.fromInt((property.currentValue) * maxLoanToValue/1000));
-            let additionalLoan : Nat = newLoan - property.loanAmount;//newLoan -  Int.abs(property.loanAmount);
+            var newLoan : Nat = _calculateMaxLoan(property.currentValue);
+            let additionalLoan : Nat = newLoan - property.loanAmount;
 
             let updatedProperty : Property = {
                 propertyId;
@@ -235,14 +225,6 @@ actor {
                 lNftN = additionalLoan;
 
             };
-         //   let minter = {
-         //       owner = Principal.fromText("2e7fg-mfyxt-iivfx-l7pim-ysvwq-qetwz-h4rhz-t76tr-5zob4-oopr3-hae"); 
-         //       subaccount = null
-         //   };
-         //   let saleCanister = {
-         //       owner = Principal.fromText("wfi7b-jiaaa-aaaas-aaa5a-cai"); 
-         //       subaccount = null
-         //   };
 
             let exchangeCanister = {
                 owner = Principal.fromText("wcjzv-eqaaa-aaaas-aaa5q-cai");
