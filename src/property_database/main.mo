@@ -44,8 +44,7 @@ actor {
     } = actor ("wfi7b-jiaaa-aaaas-aaa5a-cai");
 
     let hgb_token : actor {
-        mint_transfer : shared (from: Principal, from_subaccount: ?Subaccount, to: Account, amount: Tokens, fee: ?Tokens, memo: ?Memo, created_at_time: ?Nat64) -> async Result<Nat, TransferError>;
-		icrc2_transfer_from : shared (caller: Principal, spender_subaccount: ?Blob, from :Account, to: Account, amount: Nat, fee: ?Nat, memo: ?Blob, created_at_time: ?Nat64) -> async (Nat, ICRC2.TransferFromError); 
+        icrc2_transfer_from : shared (caller: Principal, spender_subaccount: ?Blob, from :Account, to: Account, amount: Nat, fee: ?Nat, memo: ?Blob, created_at_time: ?Nat64) -> async (Nat, ICRC2.TransferFromError); 
 	} = actor ("wlksj-syaaa-aaaas-aaa4a-cai"); 
 //wxoiy-fyaaa-aaaas-aaa6a-cai
     let icrc7nft : actor {
