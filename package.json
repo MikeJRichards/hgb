@@ -15,5 +15,8 @@
   "type": "module",
   "workspaces": [
     "src/hgb_frontend"
-  ]
+  ],
+  "dependencies": {
+    "react-router-dom": "^6.24.1"
+  }
 }
