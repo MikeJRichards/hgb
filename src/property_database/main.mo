@@ -12,6 +12,8 @@ import Blob "mo:base/Blob";
 import ICRC2 "mo:icrc2-types";
 import Int32 "mo:base/Int32";
 import Time "mo:base/Time";
+import ICRC7 "mo:icrc7-mo";
+import Nat64 "mo:base/Nat64";
 
 actor {
     public type Subaccount = Blob;
@@ -39,6 +41,18 @@ actor {
     let hgb_token : actor {
 		icrc2_transfer_from : shared (caller: Principal, spender_subaccount: ?Blob, from :Account, to: Account, amount: Nat, fee: ?Nat, memo: ?Blob, created_at_time: ?Nat64) -> async (Nat, ICRC2.TransferFromError); 
 	} = actor ("wlksj-syaaa-aaaas-aaa4a-cai"); 
+//wxoiy-fyaaa-aaaas-aaa6a-cai
+    let icrc7nft : actor {
+		icrcX_mint : shared (tokens: ICRC7.SetNFTRequest) -> async [ICRC7.SetNFTResult]; 
+        assign: shared (token_id: Nat, account : ICRC7.Account) -> async Nat;
+        icrc7_transfer : shared (args : [ICRC7.TransferArg]) -> async [?ICRC7.TransferResult];
+        icrc7_total_supply: shared query ()-> async Nat;
+	} = actor ("wxoiy-fyaaa-aaaas-aaa6a-cai");
+
+    public func lnftTotalSupply (): async Nat {
+       return await icrc7nft.icrc7_total_supply();
+    };
+
 
     private func _authorised (caller : Principal): ?Text {
         let specificPrincipal = Principal.fromText("2e7fg-mfyxt-iivfx-l7pim-ysvwq-qetwz-h4rhz-t76tr-5zob4-oopr3-hae");
@@ -163,6 +177,37 @@ actor {
         return loan; 
     };
 
+    public func mintNFTToExchange (): async (){
+        let exchangeCanister = {
+                owner = Principal.fromText("wcjzv-eqaaa-aaaas-aaa5q-cai");
+                subaccount = null
+            };
+        //ignore await icrc7nft.assign(2, exchangeCanister);
+        var token_id = await icrc7nft.icrc7_total_supply();
+        token_id += 1;
+        let nftRequest : ICRC7.SetNFTItemRequest = {
+            token_id;
+            metadata = #Nat(1000);
+            owner = ?exchangeCanister;
+            override = true;
+            memo = null;
+            created_at_time = null;
+        };
+
+        ignore await icrc7nft.icrcX_mint([nftRequest]);
+
+       //let transfer : ICRC7.TransferArg = {
+       //     from_subaccount = null;
+       //     to = exchangeCanister;
+       //     token_id = 1; 
+       //     memo = null;
+       //     created_at_time = ?Nat64.fromIntWrap(Time.now());
+       // };
+//
+       // ignore await icrc7nft.icrc7_transfer([transfer]);
+        return ();
+    };
+
   public shared ({ caller }) func makeMaxLoan (propertyId: Nat): async Result<(), Text>{
     // if (Array.find<Principal>(custodians, func (x) = x == caller) == null){
     //    return #err("You are not authorised to add properties");
@@ -194,7 +239,14 @@ actor {
                 owner = Principal.fromText("wfi7b-jiaaa-aaaas-aaa5a-cai"); 
                 subaccount = null
             };
-            ignore await hgb_token.icrc2_transfer_from(caller, null, minter, saleCanister, additionalLoan, null, null, null);
+            let exchangeCanister = {
+                owner = Principal.fromText("wcjzv-eqaaa-aaaas-aaa5q-cai");
+                subaccount = null
+            };
+            //ignore await hgb_token.icrc2_transfer_from(caller, null, minter, saleCanister, additionalLoan, null, null, null);
+            //ignore await icrc7nft.assign(2, exchangeCanister);
+           // icrc7nft.icrc7_transfer
+            //ignore await icrc7nft.icrcX_mint(additionalLoan, exchangeCanister, );
             properties.put(propertyId, updatedProperty);
             return #ok();
         }
