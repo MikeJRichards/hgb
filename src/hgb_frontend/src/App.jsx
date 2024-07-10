@@ -1,6 +1,7 @@
 import React from 'react';
 import Navbar from './components/Navbar';
 import './index.scss';
+import {exchange} from '../../declarations/exchange';
 
 const App = () => (
   <>
