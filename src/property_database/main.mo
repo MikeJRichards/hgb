@@ -53,7 +53,6 @@ actor {
        return await icrc7nft.icrc7_total_supply();
     };
 
-
     private func _authorised (caller : Principal): ?Text {
         let specificPrincipal = Principal.fromText("2e7fg-mfyxt-iivfx-l7pim-ysvwq-qetwz-h4rhz-t76tr-5zob4-oopr3-hae");
         if(caller != specificPrincipal ){

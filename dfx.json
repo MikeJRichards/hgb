@@ -1,7 +1,7 @@
 {
   "canisters": {
     "sale": {
-      "main": "src/property_database/main.mo",
+      "main": "src/sale/main.mo",
       "type": "motoko"
     },
     "exchange": {
