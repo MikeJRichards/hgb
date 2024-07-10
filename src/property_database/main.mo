@@ -177,7 +177,7 @@ actor {
         return loan; 
     };
 
-    public func mintNFTToExchange (): async (){
+    public func mintNFTToExchange (amount: Nat): async (){
         let exchangeCanister = {
                 owner = Principal.fromText("wcjzv-eqaaa-aaaas-aaa5q-cai");
                 subaccount = null
@@ -231,30 +231,43 @@ actor {
                 lNftN = additionalLoan;
 
             };
-            let minter = {
-                owner = Principal.fromText("2e7fg-mfyxt-iivfx-l7pim-ysvwq-qetwz-h4rhz-t76tr-5zob4-oopr3-hae"); 
-                subaccount = null
-            };
-            let saleCanister = {
-                owner = Principal.fromText("wfi7b-jiaaa-aaaas-aaa5a-cai"); 
-                subaccount = null
-            };
+         //   let minter = {
+         //       owner = Principal.fromText("2e7fg-mfyxt-iivfx-l7pim-ysvwq-qetwz-h4rhz-t76tr-5zob4-oopr3-hae"); 
+         //       subaccount = null
+         //   };
+         //   let saleCanister = {
+         //       owner = Principal.fromText("wfi7b-jiaaa-aaaas-aaa5a-cai"); 
+         //       subaccount = null
+         //   };
+
             let exchangeCanister = {
                 owner = Principal.fromText("wcjzv-eqaaa-aaaas-aaa5q-cai");
                 subaccount = null
             };
-            //ignore await hgb_token.icrc2_transfer_from(caller, null, minter, saleCanister, additionalLoan, null, null, null);
-            //ignore await icrc7nft.assign(2, exchangeCanister);
-           // icrc7nft.icrc7_transfer
-            //ignore await icrc7nft.icrcX_mint(additionalLoan, exchangeCanister, );
+            
+            var nftRequest : [ICRC7.SetNFTItemRequest] = [];
+            var token_id = await icrc7nft.icrc7_total_supply();
+
+            for (i in Iter.range(0, additionalLoan)) {
+            token_id += 1;
+            var nft : [ICRC7.SetNFTItemRequest] = [{
+                token_id;
+                metadata = #Nat(1000);
+                owner = ?exchangeCanister;
+                override = true;
+                memo = null;
+                created_at_time = null;
+            }];
+            nftRequest := Array.append(nft, nftRequest);
+            };
+            ignore await icrc7nft.icrcX_mint(nftRequest);
             properties.put(propertyId, updatedProperty);
             return #ok();
+            };
         }
+    };
 
-    }
-  };
-
-  system func preupgrade() {
+    system func preupgrade() {
       propertyEntries := Iter.toArray(properties.vals());
     };
     

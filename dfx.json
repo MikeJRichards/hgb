@@ -1,9 +1,5 @@
 {
   "canisters": {
-    "hgb_backend": {
-      "main": "src/hgb_backend/main.mo",
-      "type": "motoko"
-    },
     "sale": {
       "main": "src/property_database/main.mo",
       "type": "motoko"
@@ -26,7 +22,7 @@
     },
     "hgb_frontend": {
       "dependencies": [
-        "hgb_backend"
+        "property_database"
       ],
       "source": [
         "src/hgb_frontend/dist"

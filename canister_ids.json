@@ -8,6 +8,12 @@
   "exchange": {
     "ic": "wcjzv-eqaaa-aaaas-aaa5q-cai"
   },
+  "hgb_backend": {
+    "ic": "wqpom-iaaaa-aaaas-aaa6q-cai"
+  },
+  "hgb_frontend": {
+    "ic": "wzmfq-6iaaa-aaaas-aaa7a-cai"
+  },
   "property_database": {
     "ic": "xgewh-5qaaa-aaaas-aaa3q-cai"
   },
