@@ -15,6 +15,7 @@ import Time "mo:base/Time";
 import ICRC7 "mo:icrc7-mo";
 import Nat64 "mo:base/Nat64";
 
+
 actor {
     public type Subaccount = Blob;
     public type Account = { owner : Principal; subaccount : ?Subaccount };
@@ -38,7 +39,12 @@ actor {
     let properties = HashMap.HashMap<Nat, Property>(0, Nat.equal, Hash.hash); 
     stable var custodians : [Principal] = [];
 
+    let sale : actor {
+        mintToken : shared (amount: Nat) -> async ();
+    } = actor ("wfi7b-jiaaa-aaaas-aaa5a-cai");
+
     let hgb_token : actor {
+        mint_transfer : shared (from: Principal, from_subaccount: ?Subaccount, to: Account, amount: Tokens, fee: ?Tokens, memo: ?Memo, created_at_time: ?Nat64) -> async Result<Nat, TransferError>;
 		icrc2_transfer_from : shared (caller: Principal, spender_subaccount: ?Blob, from :Account, to: Account, amount: Nat, fee: ?Nat, memo: ?Blob, created_at_time: ?Nat64) -> async (Nat, ICRC2.TransferFromError); 
 	} = actor ("wlksj-syaaa-aaaas-aaa4a-cai"); 
 //wxoiy-fyaaa-aaaas-aaa6a-cai
@@ -247,7 +253,7 @@ actor {
             var nftRequest : [ICRC7.SetNFTItemRequest] = [];
             var token_id = await icrc7nft.icrc7_total_supply();
 
-            for (i in Iter.range(0, additionalLoan)) {
+            for (i in Iter.range(0, additionalLoan/1000)) {
             token_id += 1;
             var nft : [ICRC7.SetNFTItemRequest] = [{
                 token_id;
@@ -260,6 +266,7 @@ actor {
             nftRequest := Array.append(nft, nftRequest);
             };
             ignore await icrc7nft.icrcX_mint(nftRequest);
+            ignore await sale.mintToken(additionalLoan);
             properties.put(propertyId, updatedProperty);
             return #ok();
             };

@@ -103,13 +103,13 @@ actor {
     icrc1_minting_account : query() -> async ?Account;
   };
 
-  public shared ({ caller }) func mintToken() : async () {
+  public shared ({ caller }) func mintToken(amount: Nat) : async () {
     switch(await tokenCanister.icrc1_minting_account()) {
       case(?mintingAccount) {
         ignore await tokenCanister.mint_transfer(mintingAccount.owner, 
         mintingAccount.subaccount,
         {owner = caller; subaccount = null},
-        10,
+        amount,
         ?0,
         null,
         null
