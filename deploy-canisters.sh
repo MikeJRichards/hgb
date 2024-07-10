@@ -6,8 +6,6 @@
 # HOW TO RUN:
 # Run the following command: npm run local
 
-
-dfx deploy hgb_backend
 dfx deploy sale
 dfx deploy exchange
 dfx deploy property_database
