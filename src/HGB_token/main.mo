@@ -30,7 +30,7 @@ shared ({ caller = _owner }) actor class Ledger() = this {
       token_name : Text; 
       token_symbol : Text; 
       decimals : Nat8; 
-      transfer_fee : Nat; 
+      transfer_fee : Nat;
     };
   };
 
@@ -438,6 +438,31 @@ shared ({ caller = _owner }) actor class Ledger() = this {
       spender = from;
       source = #Icrc1Transfer;
       from = from;
+      to = to;
+      amount = amount;
+      fee = fee;
+      memo = memo;
+      created_at_time = created_at_time;
+    });
+  };
+
+  public shared func mint_transfer({
+    from: Principal;
+    from_subaccount : ?Subaccount;
+    to : Account;
+    amount : Tokens;
+    fee : ?Tokens;
+    memo : ?Memo;
+    created_at_time : ?Timestamp;
+  }) : async Result<TxIndex, TransferError> {
+    let fromAccount = {
+      owner = from;
+      subaccount = from_subaccount;
+    };
+    applyTransfer({
+      spender = fromAccount;
+      source = #Icrc1Transfer;
+      from = fromAccount;
       to = to;
       amount = amount;
       fee = fee;
