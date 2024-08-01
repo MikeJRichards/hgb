@@ -1,27 +1,46 @@
-import Hash "mo:base/Hash";
 import HashMap "mo:base/HashMap";
 import Result "mo:base/Result";
 import Nat "mo:base/Nat";
 import Principal "mo:base/Principal";
 import Array "mo:base/Array";
 import Option "mo:base/Option";
-import Iter "mo:base/Iter";
-import Float "mo:base/Float";
-import Int "mo:base/Nat";
 import Blob "mo:base/Blob";
-import ICRC2 "mo:icrc2-types";
-import Int32 "mo:base/Int32";
-import Time "mo:base/Time";
-import ICRC7 "mo:icrc7-mo";
-import Nat64 "mo:base/Nat64";
+import Nat8 "mo:base/Nat8";
+import Debug "mo:base/Debug";
+import Text "mo:base/Text";
+import Types "types";
 
 
 actor {
+    let hgb : actor {
+        icrc1_mint: (Account, Balance) -> async Result<(), Error1>;
+        icrc1_transfer: shared (Account, Account, Balance) -> async Result<(),Error1>;
+        icrc1_decimals: shared query () -> async Nat8;
+    } = actor("wlksj-syaaa-aaaas-aaa4a-cai");
+
+    let lnft : actor {
+        icrc7_mint_batch(number : Nat): async Result<[Nat], Error1>
+    } = actor("4kuta-kiaaa-aaaas-aabha-cai");
+
+    public type Error1 = Types.Error1
+    public type Error1 = {
+        #InsufficientBalance;
+        #InvalidAccount;
+        #InvalidAmount;
+        #Unauthorized;
+        #PropertyNotFound;
+        #TokenNotFound;
+        #InvalidInput;
+        #InternalError;
+        #TokenAlreadyExists;
+    };
+
     public type Subaccount = Blob;
     public type Account = { owner : Principal; subaccount : ?Subaccount };
     public type Tokens = Nat;
     public type Memo = Blob;
     public type Result<A,B> = Result.Result<A,B>;
+    
     public type Property = {
       propertyId: Nat;
       name: Text;
@@ -30,32 +49,20 @@ actor {
       purchasePrice: Nat;
       currentValue: Nat;
       loanAmount: Nat;
-      lNftN : Int;
+      lNftN : [Nat];
+    };
+
+    func hash(n : Nat) : Nat32 {
+      return Blob.hash(Text.encodeUtf8(Nat.toText(n)));
     };
     
     stable var maxLoanToValue : Nat = 75;
     var propertyId : Nat= 0;
-    stable var propertyEntries : [Property] = [];
-    let properties = HashMap.HashMap<Nat, Property>(0, Nat.equal, Hash.hash); 
+    let properties = HashMap.HashMap<Nat, Property>(0, Nat.equal, hash); 
     stable var custodians : [Principal] = [];
 
-    let sale : actor {
-        mintToken : shared (amount: Nat) -> async ();
-    } = actor ("wfi7b-jiaaa-aaaas-aaa5a-cai");
-
-    let hgb_token : actor {
-        icrc2_transfer_from : shared (caller: Principal, spender_subaccount: ?Blob, from :Account, to: Account, amount: Nat, fee: ?Nat, memo: ?Blob, created_at_time: ?Nat64) -> async (Nat, ICRC2.TransferFromError); 
-	} = actor ("wlksj-syaaa-aaaas-aaa4a-cai"); 
-
-    let icrc7nft : actor {
-		icrcX_mint : shared (tokens: ICRC7.SetNFTRequest) -> async [ICRC7.SetNFTResult]; 
-        assign: shared (token_id: Nat, account : ICRC7.Account) -> async Nat;
-        icrc7_transfer : shared (args : [ICRC7.TransferArg]) -> async [?ICRC7.TransferResult];
-        icrc7_total_supply: shared query ()-> async Nat;
-	} = actor ("wxoiy-fyaaa-aaaas-aaa6a-cai");
-
-    public func lnftTotalSupply (): async Nat {
-       return await icrc7nft.icrc7_total_supply();
+    public shared ({ caller }) func get_principal (): async Principal {
+        return caller;
     };
 
     private func _authorised (caller : Principal): ?Text {
@@ -117,7 +124,7 @@ actor {
           purchasePrice;
           currentValue = purchasePrice;
           loanAmount = 0;
-          lNftN = 0;
+          lNftN = [];
       };
 
       properties.put(propertyId, newProperty);
@@ -163,7 +170,7 @@ actor {
 
   public shared ({ caller }) func sellProperty (propertyId: Nat): async Result<Property, Text>{
      if (Array.find<Principal>(custodians, func (x) = x == caller) == null){
-        return #err("You are not authorised to add properties");
+        return #err("You are not authorised to sell properties");
     };
     switch(properties.get(propertyId)){
         case(null){
@@ -177,93 +184,240 @@ actor {
   };
 
     func _calculateMaxLoan (currentValue : Nat): Nat{
-        let loan : Nat = Nat.mul(Nat.div(currentValue, maxLoanToValue),100);
+        let loan : Nat = Nat.div(Nat.mul(currentValue, maxLoanToValue),100);
         return loan; 
     };
 
-    public func mintNFTToExchange (amount: Nat): async (){
-        let exchangeCanister = {
-                owner = Principal.fromText("wcjzv-eqaaa-aaaas-aaa5q-cai");
-                subaccount = null
-            };
+    public shared ({ caller }) func makeLoan (propertyId : Nat): async Result<[Nat],Error1>{
+        if (Array.find<Principal>(custodians, func (x) = x == caller) == null){
+            return #err(#Unauthorized);
+        };
 
-        var token_id = await icrc7nft.icrc7_total_supply();
-        token_id += 1;
-        let nftRequest : ICRC7.SetNFTItemRequest = {
-            token_id;
-            metadata = #Nat(1000);
-            owner = ?exchangeCanister;
-            override = true;
-            memo = null;
+        var property : Property = switch(properties.get(propertyId)){
+            case(null){ return #err(#PropertyNotFound) };
+            case(? property){ property }
+        };
+
+        let maxLoan = _calculateMaxLoan(property.currentValue);
+
+        let additionalLoan = if(Nat.greater(maxLoan, property.loanAmount)){Nat.sub(maxLoan, property.loanAmount)} else{ 0 };
+        let decimals = await hgb.icrc1_decimals();
+        let aHGB = Nat.pow(10, Nat8.toNat(decimals));
+        let hgbToMint = Nat.mul(aHGB, additionalLoan);
+        let hgbMint = await hgb.icrc1_mint({owner = Principal.fromText("xgewh-5qaaa-aaaas-aaa3q-cai"); subaccount= null}, hgbToMint);
+        switch(hgbMint){
+            case(#ok){};
+            case(#err error){return #err(error)};
+        };
+        let lNFTsToMint = Nat.div(additionalLoan, 1000);
+        let mintLNFT = await lnft.icrc7_mint_batch(lNFTsToMint);
+        var tokenIds : [Nat] = [];
+        switch(mintLNFT){
+            case(#ok tokens){ tokenIds := Array.append(property.lNftN, tokens)};
+            case(#err error){ return #err(error)};
+        };
+        let updatedProperty : Property = {
+            propertyId = propertyId;
+            name = property.name;
+            addressLine1 =  property.addressLine1;
+            postcode = property.postcode;
+            purchasePrice = property.purchasePrice;
+            currentValue = property.currentValue;
+            loanAmount = maxLoan;
+            lNftN = tokenIds;
+        };
+        properties.put(propertyId, updatedProperty);
+        return #ok(tokenIds)
+    };
+
+
+//logic for selling HGB on exchange once it's on ICPSWAP for now I'm using ICP and EXE
+
+    public type Balance = Nat;
+    public type TxIndex = Nat;
+    public type Timestamp = Nat64;
+
+    public type TransferError = {
+        #GenericError : { message : Text; error_code : Nat };
+        #TemporarilyUnavailable;
+        #BadBurn : { min_burn_amount : Balance };
+        #Duplicate : { duplicate_of : TxIndex };
+        #BadFee : { expected_fee : Balance };
+        #CreatedInFuture : { ledger_time : Timestamp };
+        #TooOld;
+        #InsufficientFunds : { balance : Balance };
+    };
+
+    public type DepositArgs = { 
+        fee : Nat; 
+        token : Text; 
+        amount : Nat 
+    };
+
+    public type SwapArgs = {
+        amountIn : Text;
+        zeroForOne : Bool;
+        amountOutMinimum : Text;
+    };
+
+    type WithdrawArgs = { 
+        fee : Nat; 
+        token : Text; 
+        amount : Nat 
+    };
+
+    public type Result1 = { 
+        #ok : Nat; 
+        #err : Error 
+    };
+
+    public type Error = {
+        #CommonError;
+        #InternalError : Text;
+        #UnsupportedToken : Text;
+        #InsufficientFunds;
+    };
+
+    public type TransferResult = { 
+        #Ok : TxIndex; 
+        #Err : TransferError 
+    };
+
+    public type TransferArgs = {
+        to : Account;
+        fee : ?Balance;
+        memo : ?Blob;
+        from_subaccount : ?Subaccount;
+        created_at_time : ?Nat64;
+        amount : Balance;
+    };
+
+    let exe : actor {
+        icrc1_balance_of: query Account -> async Nat;
+        icrc1_transfer : shared TransferArgs -> async TransferResult;
+    } = actor("rh2pm-ryaaa-aaaan-qeniq-cai");
+
+    let icpExeSwap : actor {
+        quote : shared query SwapArgs -> async Result1;
+        deposit : shared DepositArgs -> async Result1;
+        swap : shared SwapArgs -> async Result1;
+        withdraw : shared WithdrawArgs -> async Result1;
+    } = actor("dlfvj-eqaaa-aaaag-qcs3a-cai");
+
+    public func principalToBlob(p: Principal): async Blob {
+        var arr: [Nat8] = Blob.toArray(Principal.toBlob(p));
+        var defaultArr: [var Nat8] = Array.init<Nat8>(32, 0);
+        defaultArr[0] := Nat8.fromNat(arr.size());
+        var ind: Nat = 0;
+        while (ind < arr.size() and ind < 32) {
+            defaultArr[ind + 1] := arr[ind];
+            ind := ind + 1;
+        };
+        return Blob.fromArray(Array.freeze(defaultArr));
+    };
+
+    public shared ({ caller }) func getUserPrincipal (): async Principal {
+        return caller
+   };
+
+    public func getExeBalance(owner: Principal): async Nat {
+        let account : Account = {
+            owner;
+            subaccount = null;
+        };
+        return await exe.icrc1_balance_of(account);
+    };
+
+    public func getDepositBalance(): async Nat {
+        let subaccount1 = await principalToBlob(Principal.fromText("dlfvj-eqaaa-aaaag-qcs3a-cai"));
+        let swapAccount : Account = {
+            owner = Principal.fromText("dlfvj-eqaaa-aaaag-qcs3a-cai");
+            subaccount = ?subaccount1;
+        };
+        return await exe.icrc1_balance_of(swapAccount);
+    };
+
+    public func sendEXEforExchange(amount: Nat): async TransferResult {
+        let subaccount1 = await principalToBlob(Principal.fromText("4ew6i-ryaaa-aaaas-aabga-cai"));
+        let swapAccount : Account = {
+            owner = Principal.fromText("dlfvj-eqaaa-aaaag-qcs3a-cai");
+            subaccount = ?subaccount1;
+        };
+        let transfer : TransferArgs = {
+            amount;
             created_at_time = null;
+            fee = ?100000;
+            from_subaccount = null;
+            memo = null;
+            to = swapAccount;
         };
-
-        ignore await icrc7nft.icrcX_mint([nftRequest]);
-        return ();
+        return await exe.icrc1_transfer(transfer);
     };
 
-  public shared ({ caller }) func makeMaxLoan (propertyId: Nat): async Result<(), Text>{
-     if (Array.find<Principal>(custodians, func (x) = x == caller) == null){
-        return #err("You are not authorised to add properties");
-    };
-    switch(properties.get(propertyId)){
-        case(null){
-            return #err("This is not a valid property Id")
+    public func quoteIcpExeSwap(amountIn: Text): async Result1 {
+        let swapquote : SwapArgs = {
+            amountIn;
+            zeroForOne = true;
+            amountOutMinimum = "0";
         };
-        case(? property){
-            var newLoan : Nat = _calculateMaxLoan(property.currentValue);
-            let additionalLoan : Nat = newLoan - property.loanAmount;
-
-            let updatedProperty : Property = {
-                propertyId;
-                name = property.name;
-                addressLine1 = property.addressLine1;
-                postcode = property.postcode;
-                purchasePrice = property.purchasePrice;
-                currentValue = property.currentValue;
-                loanAmount = newLoan * 1000;
-                lNftN = additionalLoan;
-
-            };
-
-            let exchangeCanister = {
-                owner = Principal.fromText("wcjzv-eqaaa-aaaas-aaa5q-cai");
-                subaccount = null
-            };
-            
-            var nftRequest : [ICRC7.SetNFTItemRequest] = [];
-            var token_id = await icrc7nft.icrc7_total_supply();
-
-            for (i in Iter.range(0, additionalLoan/1000)) {
-            token_id += 1;
-            var nft : [ICRC7.SetNFTItemRequest] = [{
-                token_id;
-                metadata = #Nat(1000);
-                owner = ?exchangeCanister;
-                override = true;
-                memo = null;
-                created_at_time = null;
-            }];
-            nftRequest := Array.append(nft, nftRequest);
-            };
-            ignore await icrc7nft.icrcX_mint(nftRequest);
-            ignore await sale.mintToken(additionalLoan);
-            properties.put(propertyId, updatedProperty);
-            return #ok();
-            };
-        }
+        return await icpExeSwap.quote(swapquote);
     };
 
-    system func preupgrade() {
-      propertyEntries := Iter.toArray(properties.vals());
+    public func sendDepositEXE(amount: Nat): async Result1 {
+        let deposit : DepositArgs = { 
+            fee = 100000; 
+            token = "rh2pm-ryaaa-aaaan-qeniq-cai"; 
+            amount;
+        };
+        Debug.print("Attempting to deposit EXE: " # Nat.toText(amount) # " to icpExeSwap canister");
+        return await icpExeSwap.deposit(deposit);
     };
-    
-    system func postupgrade() {
-      propertyId := 0;
-      for(item in propertyEntries.vals()){
-        properties.put(propertyId, item);
-        propertyId +=1;
-      };  
-      propertyEntries := [];
+
+    public func swapEXE(amount: Text): async Result1 {
+        let swapArg : SwapArgs = {
+            amountIn = amount; 
+            zeroForOne = true;
+            amountOutMinimum = "0";
+        };
+        return await icpExeSwap.swap(swapArg);
     };
-};
+
+    public func withdrawICPafterSwap(amount: Nat): async Result1 {
+        let withdraw : WithdrawArgs = {
+            fee = 10000; 
+            token = "ryjl3-tyaaa-aaaaa-aaaba-cai"; 
+            amount;
+        };
+        return await icpExeSwap.withdraw(withdraw);
+    };
+
+    // Add logging for each step
+    public func swapExeForIcp(initialExeAmount: Nat): async Result1 {
+        var result : Nat = 0;
+        let balance = await getExeBalance(Principal.fromText("4ew6i-ryaaa-aaaas-aabga-cai"));
+        if(initialExeAmount > balance){
+            return  #err(#InsufficientFunds);
+        };
+        //transfer
+        ignore await sendEXEforExchange(initialExeAmount);
+        //deposit
+        let depositResult = await sendDepositEXE(initialExeAmount);
+        switch(depositResult){
+            case(#ok(amount)){result := amount};
+            case(#err(error)){return #err(error)}
+        };
+        //swap
+        let swapResult = await swapEXE(Nat.toText(result));
+        switch(swapResult){
+            case(#ok(amount)){result := amount};
+            case(#err(error)){return #err(error)};
+        };
+        //withdraw
+        let withdrawResult = await withdrawICPafterSwap(result);
+        switch(withdrawResult){
+            case(#ok(amount)){return #ok(amount)};
+            case(#err(error)){return #err(error)};
+        };
+    };
+}
+

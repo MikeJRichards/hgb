@@ -3,21 +3,15 @@
     "ic": "wlksj-syaaa-aaaas-aaa4a-cai"
   },
   "LNFT": {
-    "ic": "wmlu5-7aaaa-aaaas-aaa4q-cai"
+    "ic": "4kuta-kiaaa-aaaas-aabha-cai"
   },
   "exchange": {
     "ic": "wcjzv-eqaaa-aaaas-aaa5q-cai"
-  },
-  "hgb_backend": {
-    "ic": "wqpom-iaaaa-aaaas-aaa6q-cai"
   },
   "hgb_frontend": {
     "ic": "wzmfq-6iaaa-aaaas-aaa7a-cai"
   },
   "property_database": {
     "ic": "xgewh-5qaaa-aaaas-aaa3q-cai"
-  },
-  "sale": {
-    "ic": "wfi7b-jiaaa-aaaas-aaa5a-cai"
   }
 }

@@ -1,9 +1,5 @@
 {
   "canisters": {
-    "sale": {
-      "main": "src/sale/main.mo",
-      "type": "motoko"
-    },
     "exchange": {
       "main": "src/exchange/main.mo",
       "type": "motoko"
