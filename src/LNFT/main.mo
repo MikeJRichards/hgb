@@ -8,58 +8,26 @@ import Array "mo:base/Array";
 import Text "mo:base/Text";
 import Hash "mo:base/Hash";
 import Blob "mo:base/Blob";
-import Debug "mo:base/Debug";
 import Iter "mo:base/Iter";
+import Types "./../property_database/types";
+
 
 actor SimpleNFTCollection {
-
-    let admin: Principal = Principal.fromText("xgewh-5qaaa-aaaas-aaa3q-cai"); // Replace with your admin principal
-
-    type TokenId = Nat;
-    type Attribute = { key: Text; value: Text };
+    type TokenId = Types.TokenId;
+    type Attribute = Types.Attribute;
     type Result<A, B> = Result.Result<A, B>;
     type Hash = Hash.Hash;
-
-    type Account = {
-        owner: Principal;
-        subaccount: ?Blob;
-    };
-
-    type Metadata = {
-        name: Text;
-        description: Text;
-        image: Text; // URL to the image
-        creator: Principal;
-        creationDate: Int;
-        attributes: [Attribute];
-    };
-
-    type Token = {
-        id: TokenId;
-        owner: Account;
-        metadata: Metadata;
-    };
-
-    public type TransactionTypes = {
-        #Mint;
-        #Transfer;
-        #Burn;
-    };
-
-    type Transaction = {
-        id: Nat;
-        action: TransactionTypes;
-        tokenId: TokenId;
-        from: ?Account;
-        to: ?Account;
-        timestamp: Int;
-    };
-
-    type Approval = {
-        owner: Account;
-        approved: Account;
-        tokenId: TokenId;
-    };
+    type Account = Types.Account;
+    type Metadata = Types.Metadata;
+    type Token = Types.Token;
+    public type TransactionTypes = Types.TransactionTypes;
+    type Transaction = Types.Transaction;
+    type Approval = Types.Approval;
+    public type Error = Types.Error;
+    public type TransferArgs = Types.TransferArgs;
+    public type TransferError = Types.TransferError;
+    public type ApprovalArgs = Types.ApprovalArgs;
+    public type ApprovalError = Types.ApprovalError;
 
     func accountEqual(x: Account, y: Account): Bool {
       if(x.owner == y.owner and x.subaccount == y.subaccount){
@@ -76,6 +44,7 @@ actor SimpleNFTCollection {
       return Blob.hash(Text.encodeUtf8(Nat.toText(n)));
     };
 
+    let admin: Principal = Principal.fromText("xgewh-5qaaa-aaaas-aaa3q-cai"); 
     stable var nextTokenId: TokenId = 0;
     private var tokens: HashMap.HashMap<TokenId, Token> = HashMap.HashMap<TokenId, Token>(0, Nat.equal, hash);
     private var ownerTokens: HashMap.HashMap<Account, [TokenId]> = HashMap.HashMap<Account, [TokenId]>(0, accountEqual, accountHash);
@@ -86,48 +55,6 @@ actor SimpleNFTCollection {
         return approvals;
     };
 
-    public type Error = {
-        #Unauthorized;
-        #TokenNotFound;
-        #InvalidInput;
-        #InternalError;
-        #InsufficientBalance;
-        #TokenAlreadyExists;
-    };
-
-    public type TransferArgs = {
-        from: Account;
-        to: Account;
-        token_ids: [TokenId];
-        memo: ?Blob;
-        created_at_time: ?Nat64;
-        is_atomic: ?Bool;
-    };
-
-    public type TransferError = {
-        #Unauthorized: { token_ids: [TokenId] };
-        #TooOld;
-        #CreatedInFuture: { ledger_time: Nat64 };
-        #Duplicate: { duplicate_of: Nat };
-        #TemporarilyUnavailable;
-        #GenericError: { error_code: Nat; message: Text };
-    };
-
-    public type ApprovalArgs = {
-        owner : Account;
-        spender: Principal;
-        token_ids: [TokenId];
-        expires_at: ?Nat64;
-        memo: ?Blob;
-        created_at_time: ?Nat64;
-    };
-
-    public type ApprovalError = {
-        #Unauthorized;
-        #TooOld;
-        #TemporarilyUnavailable;
-        #GenericError: { error_code: Nat; message: Text };
-    };
 
     // Function to log transactions
     func logTransaction(action: TransactionTypes, tokenId: TokenId, from: ?Account, to: ?Account): () {

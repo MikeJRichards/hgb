@@ -1,71 +1,25 @@
 import Principal "mo:base/Principal";
 import Result "mo:base/Result";
-import Nat64 "mo:base/Nat64";
 import Nat "mo:base/Nat";
 import Array "mo:base/Array";
 import Nat8 "mo:base/Nat8";
+import Types "./../property_database/types";
 
 actor {
-  public type Subaccount = Blob;
+  public type Subaccount = Types.Subaccount;
   public type Result<A,B> = Result.Result<A,B>;
-  public type Account = { owner : Principal; subaccount : ?Subaccount };
-  public type Tokens = Nat;
-  public type Memo = Blob;
-  public type TransferArgs = {
-        from: Account;
-        to: Account;
-        token_ids: [Nat];
-        memo: ?Blob;
-        created_at_time: ?Nat64;
-        is_atomic: ?Bool;
-    };
-
-    public type ApprovalArgs = {
-        owner: Account;
-        spender: Principal;
-        token_ids: [Nat];
-        expires_at: ?Nat64;
-        memo: ?Blob;
-        created_at_time: ?Nat64;
-    };
-
-    public type TransferError = {
-        #Unauthorized: { token_ids: [Nat] };
-        #TooOld;
-        #CreatedInFuture: { ledger_time: Nat64 };
-        #Duplicate: { duplicate_of: Nat };
-        #TemporarilyUnavailable;
-        #GenericError: { error_code: Nat; message: Text };
-    };
-
-    public type Error1 = {
-        #InsufficientBalance;
-        #InvalidAccount;
-        #InvalidAmount;
-        #Unauthorized;
-        #PropertyNotFound;
-        #TokenNotFound;
-        #InvalidInput;
-        #InternalError;
-        #TokenAlreadyExists;
-    };
-
-
-    public type ApprovalError = {
-        #Unauthorized;
-        #TooOld;
-        #TemporarilyUnavailable;
-        #GenericError: { error_code: Nat; message: Text };
-    };
-
-    public type ComprehensiveError = {
-      #Icrc1 : Error1;
-      #Icrc7 : TransferError;
-      #Icrc2 : ApprovalError;
-    };
+  public type Account = Types.Account;
+  public type Tokens = Types.Tokens;
+  public type Memo = Types.Memo;
+  public type TransferArgs = Types.TransferArgs;
+  public type ApprovalArgs = Types.ApprovalArgs;
+  public type TransferError = Types.TransferError;
+  public type Error = Types.Error;
+  public type ApprovalError = Types.ApprovalError;
+  public type ComprehensiveError = Types.ComprehensiveError;
 
   let hgb : actor {
-        icrc1_transfer: shared (Account, Account, Nat) -> async Result<(),Error1>;
+        icrc1_transfer: shared (Account, Account, Nat) -> async Result<(),Error>;
         icrc1_balance_of: shared query (account: Account) -> async Nat;
         icrc1_decimals: shared query () -> async Nat8;
 	} = actor ("wlksj-syaaa-aaaas-aaa4a-cai"); 

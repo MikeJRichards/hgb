@@ -5,64 +5,18 @@ import Text "mo:base/Text";
 import Hash "mo:base/Hash";
 import Result "mo:base/Result";
 import Nat8 "mo:base/Nat8";
-
+import Types "./../property_database/types";
 
 actor HGBToken {
-    type TokenDetails = {
-        name: Text;
-        symbol: Text;
-        decimals : Nat8; 
-        transfer_fee : Nat;
-        logo_url: Text;
-    };
-
-    var tokenDetails: TokenDetails = {
-        name = "HGB Token";
-        symbol = "HGB";
-        decimals = 8;
-        transfer_fee = 10000;
-        logo_url = "https://5v4ax-jqaaa-aaaas-aabdq-cai.icp0.io/icon_logo_trans.png";
-    };
-
-    public type TokenArgs = {
-        init : { 
-          initial_mints : [
-            { 
-                account : Account; 
-                amount : Nat;
-            }
-          ]; 
-          minting_account : Account; 
-          tokenDetails : TokenDetails
-    };
-  };
-
-  let mintingAccount : Account = {
-    owner = Principal.fromText("xgewh-5qaaa-aaaas-aaa3q-cai");
-    subaccount = null;
-  };
-  
-  let TDXToken : TokenArgs = {
-    init = { 
-      initial_mints = [
-        { 
-          account = mintingAccount;
-          amount = 10000;
-        }
-      ]; 
-      minting_account = mintingAccount;
-      tokenDetails;
-    };
-  };
-
-    type Result <A,B> = Result.Result<A,B>;
-    type Balance = Nat;
+    type TokenDetails = Types.TokenDetails;
+    type Result <A,B> = Result.Result<A,B>; 
+    type Balance = Types.Balance;
     type Hash = Hash.Hash;
-    public type Subaccount = ?Blob;
-    type Account = {
-      owner: Principal;
-      subaccount: Subaccount
-      };
+    public type Subaccount = Types.Subaccount;
+    type Account = Types.Account;
+    public type TokenArgs = Types.TokenArgs;
+    type Error = Types.Error;
+    public type Value = Types.Value;
 
     func accountEqual(x: Account, y: Account): Bool {
       if(x.owner == y.owner and x.subaccount == y.subaccount){
@@ -75,32 +29,48 @@ actor HGBToken {
       return Principal.hash(x.owner);
     };
 
-   
     let balances = HashMap.HashMap<Account, Balance>(0, accountEqual, accountHash);
 
-    type Error = {
-        #InsufficientBalance;
-        #Unauthorized;
-        #InvalidAccount;
-        #InvalidAmount;
+    var tokenDetails: TokenDetails = {
+        name = "HGB Token";
+        symbol = "HGB";
+        decimals = 8;
+        transfer_fee = 10000;
+        logo_url = "https://5v4ax-jqaaa-aaaas-aabdq-cai.icp0.io/icon_logo_trans.png";
     };
 
-    public type Value = { #Nat : Nat; #Int : Int; #Blob : Blob; #Text : Text };
+    let mintingAccount : Account = {
+      owner = Principal.fromText("xgewh-5qaaa-aaaas-aaa3q-cai");
+      subaccount = null;
+    };
+    
+    let HGBToken : TokenArgs = {
+      init = { 
+        initial_mints = [
+          { 
+            account = mintingAccount;
+            amount = 10000;
+          }
+        ]; 
+        minting_account = mintingAccount;
+        tokenDetails;
+      };
+    };
 
     public shared ({ caller }) func get_principal (): async Principal {
         return caller;
     };
 
     public query func icrc1_name(): async Text {
-        return TDXToken.init.tokenDetails.name;
+        return HGBToken.init.tokenDetails.name;
     };
 
     public query func icrc1_symbol(): async Text {
-        return TDXToken.init.tokenDetails.symbol;
+        return HGBToken.init.tokenDetails.symbol;
     };
 
     public query func icrc1_decimals(): async Nat8 {
-        return TDXToken.init.tokenDetails.decimals;
+        return HGBToken.init.tokenDetails.decimals;
     };
 
     public query func icrc1_total_supply(): async Balance {
@@ -112,16 +82,16 @@ actor HGBToken {
     };
     
     public query func icrc1_transfer_fee(): async Balance {
-        return TDXToken.init.tokenDetails.transfer_fee;
+        return HGBToken.init.tokenDetails.transfer_fee;
     };
 
     public query func icrc1_metadata() : async [(Text, Value)] {
         [
-          ("icrc1:name", #Text(TDXToken.init.tokenDetails.name)),
-          ("icrc1:symbol", #Text(TDXToken.init.tokenDetails.symbol)),
-          ("icrc1:decimals", #Nat(Nat8.toNat(TDXToken.init.tokenDetails.decimals))),
-          ("icrc1:fee", #Nat(TDXToken.init.tokenDetails.transfer_fee)),
-          ("icrc1:logo", #Text(TDXToken.init.tokenDetails.logo_url))
+          ("icrc1:name", #Text(HGBToken.init.tokenDetails.name)),
+          ("icrc1:symbol", #Text(HGBToken.init.tokenDetails.symbol)),
+          ("icrc1:decimals", #Nat(Nat8.toNat(HGBToken.init.tokenDetails.decimals))),
+          ("icrc1:fee", #Nat(HGBToken.init.tokenDetails.transfer_fee)),
+          ("icrc1:logo", #Text(HGBToken.init.tokenDetails.logo_url))
         ];
     };
 

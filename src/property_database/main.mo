@@ -29,6 +29,19 @@ actor {
     public type Memo = Types.Memo;
     public type Result<A,B> = Result.Result<A,B>;
     public type Property = Types.Property;
+    public type Balance = Nat;
+    public type TxIndex = Nat;
+    public type Timestamp = Nat64;
+    public type ComprehensiveError = Types.ComprehensiveError;
+    public type TransferError = Types.TransferError;
+    public type DepositArgs = Types.DepositArgs;
+    public type SwapArgs = Types.SwapArgs;
+    public type WithdrawArgs = Types.WithdrawArgs;
+    public type Result1 = Types.Result1;
+    public type Error = Types.Error;
+    public type TransferResult = Types.TransferResult;
+    public type TransferArgs = Types.TransferArgs1;
+
 
     func hash(n : Nat) : Nat32 {
       return Blob.hash(Text.encodeUtf8(Nat.toText(n)));
@@ -166,13 +179,13 @@ actor {
         return loan; 
     };
 
-    public shared ({ caller }) func makeLoan (propertyId : Nat): async Result<[Nat],Error1>{
+    public shared ({ caller }) func makeLoan (propertyId : Nat): async Result<[Nat],ComprehensiveError>{
         if (Array.find<Principal>(custodians, func (x) = x == caller) == null){
-            return #err(#Unauthorized);
+            return #err(#Icrc1(#Unauthorized));
         };
 
         var property : Property = switch(properties.get(propertyId)){
-            case(null){ return #err(#PropertyNotFound) };
+            case(null){ return #err(#Icrc1(#PropertyNotFound)) };
             case(? property){ property }
         };
 
@@ -185,14 +198,14 @@ actor {
         let hgbMint = await hgb.icrc1_mint({owner = Principal.fromText("xgewh-5qaaa-aaaas-aaa3q-cai"); subaccount= null}, hgbToMint);
         switch(hgbMint){
             case(#ok){};
-            case(#err error){return #err(error)};
+            case(#err error){return #err(#Swap(error))};
         };
         let lNFTsToMint = Nat.div(additionalLoan, 1000);
         let mintLNFT = await lnft.icrc7_mint_batch(lNFTsToMint);
         var tokenIds : [Nat] = [];
         switch(mintLNFT){
             case(#ok tokens){ tokenIds := Array.append(property.lNftN, tokens)};
-            case(#err error){ return #err(error)};
+            case(#err error){ return #err(#Swap(error))};
         };
         let updatedProperty : Property = {
             propertyId = propertyId;
@@ -211,65 +224,7 @@ actor {
 
 //logic for selling HGB on exchange once it's on ICPSWAP for now I'm using ICP and EXE
 
-    public type Balance = Nat;
-    public type TxIndex = Nat;
-    public type Timestamp = Nat64;
-
-    public type TransferError = {
-        #GenericError : { message : Text; error_code : Nat };
-        #TemporarilyUnavailable;
-        #BadBurn : { min_burn_amount : Balance };
-        #Duplicate : { duplicate_of : TxIndex };
-        #BadFee : { expected_fee : Balance };
-        #CreatedInFuture : { ledger_time : Timestamp };
-        #TooOld;
-        #InsufficientFunds : { balance : Balance };
-    };
-
-    public type DepositArgs = { 
-        fee : Nat; 
-        token : Text; 
-        amount : Nat 
-    };
-
-    public type SwapArgs = {
-        amountIn : Text;
-        zeroForOne : Bool;
-        amountOutMinimum : Text;
-    };
-
-    type WithdrawArgs = { 
-        fee : Nat; 
-        token : Text; 
-        amount : Nat 
-    };
-
-    public type Result1 = { 
-        #ok : Nat; 
-        #err : Error 
-    };
-
-    public type Error = {
-        #CommonError;
-        #InternalError : Text;
-        #UnsupportedToken : Text;
-        #InsufficientFunds;
-    };
-
-    public type TransferResult = { 
-        #Ok : TxIndex; 
-        #Err : TransferError 
-    };
-
-    public type TransferArgs = {
-        to : Account;
-        fee : ?Balance;
-        memo : ?Blob;
-        from_subaccount : ?Subaccount;
-        created_at_time : ?Nat64;
-        amount : Balance;
-    };
-
+    
     let exe : actor {
         icrc1_balance_of: query Account -> async Nat;
         icrc1_transfer : shared TransferArgs -> async TransferResult;
@@ -316,7 +271,7 @@ actor {
     };
 
     public func sendEXEforExchange(amount: Nat): async TransferResult {
-        let subaccount1 = await principalToBlob(Principal.fromText("4ew6i-ryaaa-aaaas-aabga-cai"));
+        let subaccount1 = await principalToBlob(Principal.fromText("xgewh-5qaaa-aaaas-aaa3q-cai"));
         let swapAccount : Account = {
             owner = Principal.fromText("dlfvj-eqaaa-aaaag-qcs3a-cai");
             subaccount = ?subaccount1;

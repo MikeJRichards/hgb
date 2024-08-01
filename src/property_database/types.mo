@@ -94,7 +94,7 @@ module {
         created_at_time: ?Nat64;
         is_atomic: ?Bool;
     };
-    
+
     public type TransferArgs1 = {
         to : Account;
         fee : ?Balance;
@@ -139,7 +139,7 @@ module {
 
     public type Result1 = { 
         #ok : Nat; 
-        #err : Error 
+        #err : Error1 
     };
 
     public type TransferResult = { 
