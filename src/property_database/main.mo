@@ -22,35 +22,13 @@ actor {
         icrc7_mint_batch(number : Nat): async Result<[Nat], Error1>
     } = actor("4kuta-kiaaa-aaaas-aabha-cai");
 
-    public type Error1 = Types.Error1
-    public type Error1 = {
-        #InsufficientBalance;
-        #InvalidAccount;
-        #InvalidAmount;
-        #Unauthorized;
-        #PropertyNotFound;
-        #TokenNotFound;
-        #InvalidInput;
-        #InternalError;
-        #TokenAlreadyExists;
-    };
-
-    public type Subaccount = Blob;
-    public type Account = { owner : Principal; subaccount : ?Subaccount };
-    public type Tokens = Nat;
-    public type Memo = Blob;
+    public type Error1 = Types.Error1;
+    public type Subaccount = Types.Subaccount;
+    public type Account = Types.Account;
+    public type Tokens = Types.Tokens;
+    public type Memo = Types.Memo;
     public type Result<A,B> = Result.Result<A,B>;
-    
-    public type Property = {
-      propertyId: Nat;
-      name: Text;
-      addressLine1: Text;
-      postcode: Text;
-      purchasePrice: Nat;
-      currentValue: Nat;
-      loanAmount: Nat;
-      lNftN : [Nat];
-    };
+    public type Property = Types.Property;
 
     func hash(n : Nat) : Nat32 {
       return Blob.hash(Text.encodeUtf8(Nat.toText(n)));
