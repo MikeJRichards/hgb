@@ -51,11 +51,6 @@ actor SimpleNFTCollection {
     private var transactions: HashMap.HashMap<TokenId, [Transaction]> = HashMap.HashMap<TokenId, [Transaction]>(0, Nat.equal, hash);
     private stable var approvals: [Approval] = [];
 
-    public func getApprovals (): async [Approval]{
-        return approvals;
-    };
-
-
     // Function to log transactions
     func logTransaction(action: TransactionTypes, tokenId: TokenId, from: ?Account, to: ?Account): () {
         let transaction : Transaction = {

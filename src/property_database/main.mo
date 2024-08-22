@@ -12,16 +12,6 @@ import Types "types";
 
 
 actor {
-    let hgb : actor {
-        icrc1_mint: (Account, Balance) -> async Result<(), Error1>;
-        icrc1_transfer: shared (Account, Account, Balance) -> async Result<(),Error1>;
-        icrc1_decimals: shared query () -> async Nat8;
-    } = actor("wlksj-syaaa-aaaas-aaa4a-cai");
-
-    let lnft : actor {
-        icrc7_mint_batch(number : Nat): async Result<[Nat], Error1>
-    } = actor("4kuta-kiaaa-aaaas-aabha-cai");
-
     public type Error1 = Types.Error1;
     public type Subaccount = Types.Subaccount;
     public type Account = Types.Account;
@@ -41,6 +31,17 @@ actor {
     public type Error = Types.Error;
     public type TransferResult = Types.TransferResult;
     public type TransferArgs = Types.TransferArgs1;
+    
+    let hgb : actor {
+        icrc1_mint: (Account, Balance) -> async Result<(), Error1>;
+        icrc1_transfer: shared (Account, Account, Balance) -> async Result<(),Error1>;
+        icrc1_decimals: shared query () -> async Nat8;
+        icrc1_balance_of: shared query (Account) -> async Balance; 
+    } = actor("wlksj-syaaa-aaaas-aaa4a-cai");
+
+    let lnft : actor {
+        icrc7_mint_batch(number : Nat): async Result<[Nat], Error1>
+    } = actor("4kuta-kiaaa-aaaas-aabha-cai");
 
 
     func hash(n : Nat) : Nat32 {
@@ -285,6 +286,22 @@ actor {
             to = swapAccount;
         };
         return await exe.icrc1_transfer(transfer);
+    };
+
+    public func transferHGB (to : Account, amount : Nat): async  Result<(),Error1> {
+        let ourAccount = {
+            owner = Principal.fromText("xgewh-5qaaa-aaaas-aaa3q-cai");
+            subaccount = null;
+        };
+        return await hgb.icrc1_transfer(ourAccount, to, amount);
+    };
+
+    public func balanceHGB (): async Nat {
+        let ourAccount = {
+            owner = Principal.fromText("xgewh-5qaaa-aaaas-aaa3q-cai");
+            subaccount = null;
+        };
+        return await hgb.icrc1_balance_of(ourAccount);
     };
 
     public func quoteIcpExeSwap(amountIn: Text): async Result1 {

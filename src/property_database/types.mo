@@ -28,15 +28,15 @@ module {
       currentValue: Nat;
       loanAmount: Nat;
       lNftN : [Nat];
+    };
     
-    };
-   public type Account = {
-        owner: Principal;
-        subaccount: ?Blob;
-    };
-
-    public type Metadata = {
-        name: Text;
+    public type Account = {
+         owner: Principal;
+         subaccount: ?Blob;
+     };
+    
+     public type Metadata = {
+         name: Text;
         description: Text;
         image: Text; // URL to the image
         creator: Principal;
@@ -80,6 +80,14 @@ module {
         timestamp: Int;
     };
 
+    // ICRC3 Transaction Log
+    public type TransactionICRC3 = {
+        from: ?Account;
+        to: ?Account;
+        amount: Balance;
+        timestamp: Int;
+    };
+
     public type TransactionTypes = {
         #Mint;
         #Transfer;
@@ -110,6 +118,12 @@ module {
         tokenId: TokenId;
     };
 
+    public type Allowance = {
+        owner: Account;
+        spender: Account;
+        amount: Balance;
+    };
+
     public type ApprovalArgs = {
         owner : Account;
         spender: Principal;
@@ -118,6 +132,7 @@ module {
         memo: ?Blob;
         created_at_time: ?Nat64;
     };
+
 
     public type DepositArgs = { 
         fee : Nat; 
